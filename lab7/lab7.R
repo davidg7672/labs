@@ -50,8 +50,32 @@ summary(life_exp$uninsured_rate)
 summary(lm(female_le ~ uninsured_rate + median_hh_income, data = life_exp))
 summary(lm(female_le ~ uninsured_rate + median_hh_income + Region, data = life_exp))
 
+
+########
+# homeless data
 spending <- read_excel("data/homelessness_data.xlsx", "Federal Aid")
 spending$state_code <- substr(spending$coc_number, 1, 2)
 state_spending <- spending |>
   group_by(state_code) |>
   summarize(funding = sum(amount))
+
+homelessness <- read_excel("data/homelessness_data.xlsx", "Homelessness")
+census <- read_excel("data/homelessness_data.xlsx", "Census Data")
+merged_data <- merge(homelessness, census, by = "state_name")
+merged_data$avg_homeless_per_100k <- (merged_data$total_homeless_pop/merged_data$total_population) * 100000
+
+merged_data$poverty_rate <- (merged_data$under.5 + merged_data$pov_0.5to0.99) / merged_data$total
+
+ggplot(merged_data, aes(x = poverty_rate, y = avg_homeless_per_100k)) +
+  geom_point() + 
+  labs(
+    x = "Povery Rate",
+    y = "Homelessness Per 100k",
+    title = "Homelessness vs Poverty Rate"
+  ) +
+  theme_minimal()
+
+merged_data$poverty_rate <- merged_data$poverty_rate * 100
+
+summary(lm(avg_homeless_per_100k ~ poverty_rate, data = merged_data))
+summary(merged_data$poverty_rate)
